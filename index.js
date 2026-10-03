@@ -112,6 +112,7 @@ const PHASES = [
     goalMsg: '¡Gol a oscuras! ¿Quién ha sío? ¡Que alguien encienda la luz!' },
 ];
 const PHASE_IDX = Object.fromEntries(PHASES.map((p, i) => [p.id, i]));
+const PLAT = require('./plataformas')({ io, PHASES, PHASE_IDX, markDirty: () => markDirty() });
 const PADEL_PHASES = ['halloween', 'navidad', 'verano', 'levante', 'apagon'].map((id) => PHASE_IDX[id]);
 const ALL_PHASES = PHASES.map((_, i) => i);
 
@@ -158,14 +159,14 @@ function newCode() {
  * ------------------------------------------------------------------------- */
 function serializeRoom(r) {
   const inst = instances.get(r.main);
-  return { code: r.code, level: r.level, score: r.score, history: r.history.slice(-15),
+  return { code: r.code, level: r.level, platLevel: r.platLevel || 0, score: r.score, history: r.history.slice(-15),
     phasePos: inst ? inst.pos : r.phasePos, createdAt: r.createdAt, lastUsed: Date.now() };
 }
 function getOrCreateRoom(code) {
   let r = rooms.get(code);
   if (r) return r;
   const s = savedRooms[code];
-  r = { code, level: s?.level || 0, score: s?.score || [0, 0], history: s?.history || [],
+  r = { code, level: s?.level || 0, platLevel: s?.platLevel || 0, plat: null, score: s?.score || [0, 0], history: s?.history || [],
     phasePos: s?.phasePos || 0, createdAt: s?.createdAt || Date.now(), members: new Set(), emptySince: 0, main: null };
   const inst = createInstance({ type: 'futbol', room: r, duel: false, list: ALL_PHASES, pos: process.env.START_PHASE ? PHASE_IDX[process.env.START_PHASE] : r.phasePos, dur: PHASE_SECONDS });
   r.main = inst.id;
@@ -189,6 +190,16 @@ function createInstance({ type, room, duel, list, pos = 0, dur = 60 }) {
   };
   instances.set(inst.id, inst);
   setupPhase(inst, true);
+  return inst;
+}
+/* La pista de plataformas de la sala (se crea la primera vez que alguien entra) */
+function getPlatInstance(room) {
+  let inst = room.plat && instances.get(room.plat);
+  if (inst) return inst;
+  inst = { id: 'i' + instSeq++, type: 'plat', roomCode: room.code, room, duel: false, players: new Set(), tick: 0, ended: false };
+  instances.set(inst.id, inst);
+  PLAT.create(inst, room);
+  room.plat = inst.id;
   return inst;
 }
 const phaseOf = (inst) => PHASES[inst.list[inst.pos]];
@@ -241,6 +252,7 @@ function setupPhase(inst, first = false) {
   }
 }
 function phasePacket(inst) {
+  if (inst.type === 'plat') return PLAT.packet(inst);
   const ph = phaseOf(inst);
   return { id: ph.id, idx: inst.list[inst.pos], name: ph.name, emoji: ph.emoji, hint: ph.hint,
     endsAt: Math.round(inst.phaseEndsAt * 1000), startedAt: Math.round(inst.phaseStartedAt * 1000), dur: inst.dur,
@@ -283,6 +295,8 @@ function endMatch(inst) {
  *  ENTRAR Y SALIR DE PISTAS
  * ------------------------------------------------------------------------- */
 function spawnPlayer(inst, p) {
+  if (inst.type === 'plat') return PLAT.spawn(inst, p);
+  p.pl = null;
   const t = now();
   p.vx = p.vz = p.vy = 0; p.y = 0; p.stunUntil = 0; p.immuneUntil = t + 2;
   if (inst.type === 'padel') {
@@ -342,7 +356,7 @@ function makeBot(team = 1, side = 0) {
     sprintUntil: 0, sprintCd: 0, stunUntil: 0, immuneUntil: 0, boostUntil: 0, lastHit: 0, botMiss: false, botThink: 0 };
 }
 function balanceBots(inst) {
-  if (inst.duel) return;
+  if (!inst || inst.duel || inst.type !== 'futbol') return;
   const humans = [...inst.players].filter((p) => !p.isBot);
   const bots = [...inst.players].filter((p) => p.isBot);
   const activeHumans = humans.filter(isActive).length;
@@ -806,6 +820,11 @@ function stepInstance(inst, t) {
     if (inst.duel) { instances.delete(inst.id); }
     return;
   }
+  if (inst.type === 'plat') {
+    PLAT.step(inst, t, DT);
+    if (++inst.tick % SEND_EVERY === 0) io.to(inst.id).volatile.emit('s', PLAT.snapshot(inst, t));
+    return;
+  }
   // Si en un reto alguien se va a merendar, el partido se para (¡con educación!)
   const shouldPause = inst.duel && humans.some((p) => !isActive(p));
   if (shouldPause && !inst.paused) { inst.paused = true; inst.pausedAt = t; io.to(inst.id).emit('fx', { t: 'pause', on: true }); }
@@ -869,6 +888,7 @@ setInterval(() => {
     if (r.members.size === 0 && r.emptySince && t - r.emptySince > 120000) {
       savedRooms[r.code] = serializeRoom(r);
       instances.delete(r.main);
+      if (r.plat) instances.delete(r.plat);
       rooms.delete(r.code);
       markDirty();
     }
@@ -944,7 +964,7 @@ function broadcastOnline() {
   onlineTimer = setTimeout(() => {
     onlineTimer = null;
     const list = [...players.values()].filter((p) => p.name).map((p) => ({ id: p.id, name: p.name, room: p.room, status: p.status,
-      duel: !!instances.get(p.inst)?.duel }));
+      duel: !!instances.get(p.inst)?.duel, plat: instances.get(p.inst)?.type === 'plat' }));
     io.emit('online', list);
   }, 300);
 }
@@ -955,7 +975,7 @@ function broadcastOnline() {
 io.on('connection', (socket) => {
   const p = { id: socket.id, nid: nidSeq++, socket, name: null, profile: null, face: null, faceV: 0,
     room: null, inst: null, team: 0, side: 0, status: 'jugando', isBot: false,
-    x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, rot: 0, input: { x: 0, z: 0, s: false }, kseq: 0, wantKick: 0, lastKick: 0,
+    x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, rot: 0, input: { x: 0, z: 0, s: false, j: false }, kseq: 0, pseq: 0, wantKick: 0, wantPower: 0, lastKick: 0,
     sprintUntil: 0, sprintCd: 0, stunUntil: 0, immuneUntil: 0, boostUntil: 0, lastHit: 0, lastInputAt: 0, inputCount: 0, inputWindow: 0 };
   players.set(socket.id, p);
   socket.emit('online', [...players.values()].filter((q) => q.name).map((q) => ({ id: q.id, name: q.name, room: q.room, status: q.status, duel: !!instances.get(q.inst)?.duel })));
@@ -1001,6 +1021,25 @@ io.on('connection', (socket) => {
 
   socket.on('leaveRoom', () => { leaveRoom(p); broadcastOnline(); });
 
+  // Cambiar entre el campo de fútbol y las plataformas
+  socket.on('goPlat', () => {
+    const room = rooms.get(p.room);
+    if (!room || instances.get(p.inst)?.duel) return;
+    const main = instances.get(room.main);
+    addToInstance(p, getPlatInstance(room));
+    balanceBots(main);
+    io.to('room:' + room.code).except(socket.id).emit('toast', { text: `🏃 ${p.name} se ha ido a las plataformas. ¡A por sus chiquis!` });
+    broadcastOnline();
+  });
+  socket.on('goField', () => {
+    const room = rooms.get(p.room);
+    if (!room || instances.get(p.inst)?.duel) return;
+    const main = instances.get(room.main);
+    addToInstance(p, main);
+    balanceBots(main);
+    broadcastOnline();
+  });
+
   // Entrada del mando: sólo la dirección, el esprín y el contador de chutes
   socket.on('i', (d) => {
     if (!d || !p.inst) return;
@@ -1010,8 +1049,11 @@ io.on('connection', (socket) => {
     let x = Number(d.x) || 0, z = Number(d.z) || 0;
     const l = Math.hypot(x, z); if (l > 1) { x /= l; z /= l; }
     p.input.x = x; p.input.z = z; p.input.s = !!d.s;
+    p.input.j = !!d.j;
     const k = Number(d.k) | 0;
     if (k !== p.kseq) { p.kseq = k; p.wantKick = t + 0.25; }
+    const pw = Number(d.p) | 0;
+    if (pw !== p.pseq) { p.pseq = pw; p.wantPower = t + 0.25; }
     if (p.status !== 'jugando' && (x || z)) setStatus(p, 'jugando');
   });
 

@@ -172,9 +172,29 @@ table.rank tr.me td{background:rgba(242,183,5,.18)}
   #wind{width:62px;height:62px;bottom:calc(200px + env(safe-area-inset-bottom))}
   #wind i{font-size:32px}
   #duelBar{bottom:calc(170px + env(safe-area-inset-bottom));font-size:13px}
+
   #serveHint{bottom:calc(220px + env(safe-area-inset-bottom));font-size:15px}
 }
+#platHud{position:absolute;left:10px;bottom:calc(14px + env(safe-area-inset-bottom));background:rgba(10,5,25,.8);border:2px solid rgba(255,255,255,.2);border-radius:14px;padding:8px 12px;font-weight:900;pointer-events:none;min-width:150px}
+#platHud .pbig{font:30px Bungee,Impact,'Arial Black',sans-serif;color:var(--albero2)}
+#platHud div{font-size:13px}
+.pprog{position:absolute;top:calc(max(10px,env(safe-area-inset-top)) + 128px);left:50%;transform:translateX(-50%);width:min(520px,80vw);height:10px;background:rgba(255,255,255,.18);border-radius:6px;pointer-events:none;display:none}
+body.platmode .pprog{display:block}
+.pprog b{position:absolute;right:-24px;top:-8px;font-size:18px}
+#pProg i{position:absolute;top:-4px;width:14px;height:14px;border-radius:50%;background:#9cd8ff;border:2px solid #000;transform:translateX(-50%)}
+#pProg i.me{background:var(--albero);width:18px;height:18px;top:-6px;z-index:2}
+body.platmode #emotes{bottom:calc(40px + env(safe-area-inset-bottom));left:auto;right:10px;transform:none;max-width:40vw;justify-content:flex-end}
+#tPower{width:68px;height:68px;background:#ff8fd0}
 #helpKeys{position:absolute;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));font-size:12px;font-weight:800;opacity:.75;background:rgba(10,5,25,.6);padding:6px 9px;border-radius:10px;pointer-events:none}
+@media (max-width:760px){
+  #platHud{top:calc(max(6px,env(safe-area-inset-top)) + 122px);bottom:auto;left:50%;transform:translateX(-50%);padding:4px 10px;min-width:0;display:flex;gap:10px;align-items:center;white-space:nowrap}
+  #platHud.hidden{display:none}
+  #platHud .pbig{font-size:20px}
+  #platHud div{font-size:11px}
+  #pCostume{display:none!important}
+  .pprog{top:calc(max(6px,env(safe-area-inset-top)) + 108px)}
+  body.platmode #emotes{bottom:auto;right:auto}
+}
 </style>
 </head>
 <body>
@@ -233,7 +253,8 @@ table.rank tr.me td{background:rgba(242,183,5,.18)}
         <span>🎃 Fantasma del Alcázar</span><span>🎄 Nieve en el Mamelón</span><span>🏖️ Caló y playa</span><span>🌬️ Levante en Cádiz</span>
         <span>🐴 Feria del Caballo</span><span>🏍️ Circuito de Jerez</span><span>🍇 Bodega Loca</span><span>🔦 Apagón en Guadalcacín</span>
       </div>
-      <p class="small" style="margin-top:12px">⌨️ Mover: WASD o flechas · Chutar / golpear: Espacio · Esprín: Shift · Frases: 1‑8<br>📱 En el móvil: joystick a la izquierda y botones a la derecha.</p>
+      <p class="small" style="margin-top:12px">🎮 Modos: fútbol Jerez vs Guadalcacín, retos de pádel y 1vs1, y <b>🏃 carreras de plataformas</b> donde se roban chiquis, poderes y muñecos.</p>
+      <p class="small" style="margin-top:8px">⌨️ Mover: WASD o flechas · Chutar / golpear: Espacio · Esprín: Shift · Frases: 1‑8<br>📱 En el móvil: joystick a la izquierda y botones a la derecha.</p>
     </div>
   </div>
 </section>
@@ -246,6 +267,7 @@ table.rank tr.me td{background:rgba(242,183,5,.18)}
     <button class="hb y" id="btnAway">⏸️<span class="lbl"> Me voy un momento</span></button>
     <div id="roomBadge">Sala <b id="roomCode">----</b></div>
     <button class="hb" id="btnInvite">📲 Invitar</button>
+    <button class="hb y" id="btnMode">🏃 Plataformas</button>
   </div>
   <div id="rightBtns">
     <button class="hb" id="btnOnline">👥 <span id="onCount">0</span></button>
@@ -255,6 +277,12 @@ table.rank tr.me td{background:rgba(242,183,5,.18)}
     <button class="hb" id="btnExit">🚪</button>
   </div>
   <div id="toasts"></div>
+  <div id="platHud" class="hidden">
+    <div class="pbig"><span id="pChiquis">0</span> 🧒</div>
+    <div id="pPower">— sin poder —</div>
+    <div id="pCostume"></div>
+  </div>
+  <div id="pProgWrap" class="pprog"><div id="pProg"></div><b>🏁</b></div>
   <div id="wind" class="hidden"><i>⬆️</i><span>LEVANTE</span></div>
   <div id="duelBar" class="hidden"><span id="duelTxt"></span><button class="hb sm" id="btnSurrender">🏳️ Rendirse</button></div>
   <div id="serveHint" class="hidden">¡TE TOCA SACAR! (ESPACIO)</div>
@@ -265,7 +293,7 @@ table.rank tr.me td{background:rgba(242,183,5,.18)}
 
 <div id="touch" class="hidden">
   <div id="joyZone"><div id="joyBase"><div id="joyKnob"></div></div></div>
-  <div id="tBtns"><button id="tSprint">ESPRÍN</button><button id="tKick">CHUTA</button></div>
+  <div id="tBtns"><button id="tPower" class="hidden">PODER</button><button id="tSprint">ESPRÍN</button><button id="tKick">CHUTA</button></div>
 </div>
 
 <div id="statusMenu" class="sheet hidden">
@@ -780,7 +808,10 @@ const saco = new THREE.Group();
  *  APLICAR LA FASE (cuando er servidó dice "¡cambio de mundo!")
  * ======================================================================== */
 function applyPhase(ph, announce = true) {
+  if (ph.type === 'plat') return applyPlat(ph, announce);
   S.phase = ph;
+  platRoot.visible = false;
+  for (const av of S.avatars.values()) { setCostume(av, 0); av.g.scale.setScalar(1); av.labelTxt = null; av.g.visible = true; applyFace(av); }
   buildArena(ph);
   const v = VIS[ph.id];
   scene.background.setHex(v.bg);
@@ -809,6 +840,7 @@ function applyPhase(ph, announce = true) {
   $('#phName').textContent = `${ph.emoji} ${ph.name}`;
   $('#phHint').textContent = ph.hint;
   $('#phLevel').textContent = ph.duel ? 'RETO' : `NIVEL ${ph.level + 1}`;
+  setModeUI();
   if (announce) { bigText(`${ph.emoji} ${ph.name}`, ph.hint); SFX.whistle(); }
 }
 
@@ -850,6 +882,8 @@ function connect() {
   socket.on('fx', onFx);
   socket.on('emote', ({ nid, text }) => { const av = S.avatars.get(nid); if (av) { av.bubble.userData.redraw(text); av.bubble.visible = true; av.bubbleUntil = performance.now() + 2600; } });
   socket.on('challenged', (c) => onChallenged(c));
+  socket.on('pt', onPlatPt);
+  socket.on('race', onRace);
   return socket;
 }
 function hello(force) {
@@ -901,6 +935,7 @@ function onSnapshot(pkt) {
   const off = pkt.t - Date.now();
   S.offset = S.offset === null ? off : S.offset + (off - S.offset) * 0.04;
   if (off < S.offset - 5) S.offset = off; // si llega antes de lo previsto, corregimos
+  if (pkt.plat) return onPlatSnapshot(pkt);
   const players = new Map();
   for (let i = 0; i < pkt.p.length; i += 6) players.set(pkt.p[i], [pkt.p[i + 1], pkt.p[i + 2], pkt.p[i + 3], pkt.p[i + 4], pkt.p[i + 5]]);
   const b = []; for (let i = 0; i < pkt.b.length; i += 3) b.push([pkt.b[i], pkt.b[i + 1], pkt.b[i + 2]]);
@@ -924,6 +959,7 @@ function bracket(delay) {
  * ======================================================================== */
 function onFx(f) {
   const me = S.roster.get(S.nid);
+  if (onPlatFx(f)) return;
   switch (f.t) {
     case 'goal': {
       SFX.goal();
@@ -1067,9 +1103,9 @@ function showRanking() {
     const box = $('#modalBox'); box.innerHTML = '';
     box.append(el('h2', { textContent: '🏆 Los cracks de Jerez y Guadalcacín' }));
     const tbl = el('table', { className: 'rank' });
-    tbl.append(el('tr', {}, ...['#', 'Nombre', 'Puntos', 'Goles', 'Partíos G', 'Pádel G', 'Retos G', '👻'].map((h) => el('th', { textContent: h }))));
+    tbl.append(el('tr', {}, ...['#', 'Nombre', 'Puntos', 'Goles', 'Partíos G', 'Pádel G', 'Retos G', 'Carreras G', '🧒', '👻'].map((h) => el('th', { textContent: h }))));
     r.top.forEach((p, i) => {
-      const tr = el('tr', { className: p.name === S.name ? 'me' : '' }, ...[i + 1, p.name, p.points, p.goals, p.wins, p.padelW, p.duelW, p.saco].map((v) => el('td', { textContent: v })));
+      const tr = el('tr', { className: p.name === S.name ? 'me' : '' }, ...[i + 1, p.name, p.points, p.goals, p.wins, p.padelW, p.duelW, p.platW || 0, p.chiquis || 0, p.saco].map((v) => el('td', { textContent: v })));
       tbl.append(tr);
     });
     box.append(tbl);
@@ -1088,12 +1124,17 @@ function showRanking() {
 const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 if (isTouch) $('#helpKeys').classList.add('hidden');
 const keys = new Set();
-const input = { x: 0, z: 0, s: false, k: 0 };
+const input = { x: 0, z: 0, s: false, k: 0, j: false, p: 0 };
+const isPlatMode = () => S.phase?.type === 'plat';
+let tJump = false;
 let joy = { x: 0, z: 0 }, lastSent = '', lastSendT = 0;
 addEventListener('keydown', (e) => {
   if (!S.inGame || e.target.tagName === 'INPUT') return;
   keys.add(e.code);
-  if ((e.code === 'Space' || e.code === 'KeyK' || e.code === 'KeyJ') && !e.repeat) { input.k++; sendInput(true); }
+  const jumpKey = e.code === 'Space' || e.code === 'KeyK' || e.code === 'KeyJ' || (isPlatMode() && (e.code === 'KeyW' || e.code === 'ArrowUp'));
+  if (jumpKey && !e.repeat) { input.k++; sendInput(true); }
+  if (isPlatMode() && (e.code === 'KeyE' || e.code === 'KeyQ' || e.code === 'KeyL') && !e.repeat) { input.p++; sendInput(true); }
+  if (isPlatMode() && (e.code === 'KeyX') && !e.repeat) { keys.add('ShiftLeft'); setTimeout(() => keys.delete('ShiftLeft'), 120); }
   if (/^Digit[1-8]$/.test(e.code)) S.socket.emit('emote', +e.code.slice(5) - 1);
   if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
 });
@@ -1109,14 +1150,16 @@ function readInput() {
   const l = Math.hypot(x, z); if (l > 1) { x /= l; z /= l; }
   input.x = Math.round(x * 100) / 100; input.z = Math.round(z * 100) / 100;
   input.s = keys.has('ShiftLeft') || keys.has('ShiftRight') || tSprint;
+  input.j = keys.has('Space') || keys.has('KeyW') || keys.has('ArrowUp') || keys.has('KeyK') || keys.has('KeyJ') || tJump;
+  if (isPlatMode()) { input.z = 0; if (Math.abs(input.x) < 0.25) input.x = 0; }
 }
 function sendInput(force = false) {
   if (!S.socket || !S.inGame) return;
   readInput();
-  const sig = `${input.x},${input.z},${input.s ? 1 : 0},${input.k}`;
+  const sig = `${input.x},${input.z},${input.s ? 1 : 0},${input.k},${input.j ? 1 : 0},${input.p}`;
   const t = performance.now();
   if (force || sig !== lastSent || t - lastSendT > 250) {
-    S.socket.emit('i', { x: input.x, z: input.z, s: input.s, k: input.k });
+    S.socket.emit('i', { x: input.x, z: input.z, s: input.s, k: input.k, j: input.j, p: input.p });
     lastSent = sig; lastSendT = t;
   }
 }
@@ -1128,9 +1171,392 @@ jz.addEventListener('touchstart', (e) => { const t = e.changedTouches[0]; joyId 
 jz.addEventListener('touchmove', (e) => { for (const t of e.changedTouches) if (t.identifier === joyId) { let dx = t.clientX - joyOrigin.x, dy = t.clientY - joyOrigin.y; const l = Math.hypot(dx, dy), m = 55; if (l > m) { dx *= m / l; dy *= m / l; } jk.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`; joy = { x: dx / m, z: dy / m }; } e.preventDefault(); }, { passive: false });
 const joyEnd = (e) => { for (const t of e.changedTouches) if (t.identifier === joyId) { joyId = null; joy = { x: 0, z: 0 }; jb.style.display = 'none'; jk.style.transform = 'translate(-50%,-50%)'; } };
 jz.addEventListener('touchend', joyEnd); jz.addEventListener('touchcancel', joyEnd);
-$('#tKick').addEventListener('touchstart', (e) => { input.k++; sendInput(true); e.preventDefault(); }, { passive: false });
+$('#tKick').addEventListener('touchstart', (e) => { tJump = true; input.k++; sendInput(true); e.preventDefault(); }, { passive: false });
+$('#tKick').addEventListener('touchend', () => { tJump = false; sendInput(true); });
+$('#tPower').addEventListener('touchstart', (e) => { input.p++; sendInput(true); e.preventDefault(); }, { passive: false });
 $('#tSprint').addEventListener('touchstart', (e) => { tSprint = true; e.preventDefault(); }, { passive: false });
 $('#tSprint').addEventListener('touchend', () => { tSprint = false; });
+
+/* ===========================================================================
+ *  MODO PLATAFORMAS (vista de lado, a lo clásico)
+ *  El nivel llega una vez; luego sólo viajan posiciones y cambios pequeños.
+ * ======================================================================== */
+const COSTUMES = ['normal', 'rayo', 'saltaora', 'fantasma', 'torero'];
+const COSTUME_LABEL = { normal: '🙂 Tú mismo', rayo: '⚡ El Rayo de la Campiña', saltaora: '💃 La Saltaora', fantasma: '👻 El Fantasma del Alcázar', torero: '🐂 El Torero' };
+const POWER_ICON = ['', '🌶️', '🛡️', '🧨', '🧲'];
+const POWER_LABEL = ['Sin poder', 'Guindilla', 'Escudo', 'Petardo', 'Imán'];
+const PVIS = {
+  halloween: { top: 0x4a3a5a, dirt: 0x2a2030, plat: 0x5a4a2a, sil: 0x1c1428 },
+  navidad: { top: 0xffffff, dirt: 0x8a6a50, plat: 0xb8d8ff, sil: 0xaac4e8 },
+  verano: { top: 0xf2d48a, dirt: 0xc9a05a, plat: 0x8a5a2b, sil: 0x2f9ad0 },
+  levante: { top: 0x4aa356, dirt: 0x8a6a40, plat: 0xf4ead2, sil: 0x7fb4d8 },
+  feria: { top: 0xd9a441, dirt: 0x9a6a2a, plat: 0xffffff, sil: 0x2a2450 },
+  circuito: { top: 0x3c3c44, dirt: 0x2a2a30, plat: 0xe6392f, sil: 0x5e9e4c },
+  vendimia: { top: 0x5a8a2a, dirt: 0x6b4a2b, plat: 0x7a4a22, sil: 0x4a2a3a },
+  apagon: { top: 0x2a3a2a, dirt: 0x15151a, plat: 0x333344, sil: 0x08080c },
+};
+let plat = null;
+const platRoot = new THREE.Group(); platRoot.visible = false; scene.add(platRoot);
+const chiquiFace = canvasTex(64, 64, (g) => { g.fillStyle = '#f0c08a'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#222'; g.beginPath(); g.arc(20, 26, 6, 0, 7); g.arc(44, 26, 6, 0, 7); g.fill(); g.lineWidth = 5; g.strokeStyle = '#222'; g.beginPath(); g.arc(32, 36, 14, 0.2, Math.PI - 0.2); g.stroke(); g.fillStyle = '#3b2a1a'; g.fillRect(0, 0, 64, 12); });
+const boxTex = (txt, bg) => canvasTex(128, 128, (g) => { g.fillStyle = bg; g.fillRect(0, 0, 128, 128); g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 10; g.strokeRect(5, 5, 118, 118); g.font = '900 84px Nunito, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.fillText(txt, 64, 70); });
+const TEX_BOXP = boxTex('?', '#f2b705'), TEX_BOXD = boxTex('★', '#8a2fd0');
+const CHIQUI_COLS = [0xe6392f, 0x2f6fe4, 0x1fa45a, 0xf2b705, 0xff7ad9, 0x9b30ff];
+function makeChiqui(i = 0) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.4, 0.3), std(CHIQUI_COLS[i % CHIQUI_COLS.length]));
+  body.position.y = 0.2; g.add(body);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.44, 0.44), [std(0xf0c08a), std(0xf0c08a), std(0x3b2a1a), std(0xf0c08a), new THREE.MeshStandardMaterial({ map: chiquiFace }), std(0x3b2a1a)]);
+  head.position.y = 0.62; g.add(head);
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+function disposeGroup(g) { g.traverse((o) => { o.geometry?.dispose(); if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => m.dispose()); }); }
+
+function buildPlat(ph) {
+  if (plat) { platRoot.remove(plat.group); disposeGroup(plat.group); plat.ents.forEach((e) => platRoot.remove(e.g)); plat.loose.forEach((e) => platRoot.remove(e.g)); }
+  const { LEN, H } = ph, pv = PVIS[ph.id];
+  const grid = new Uint8Array(LEN * H);
+  for (let i = 0; i < grid.length; i++) grid[i] = ph.tiles.charCodeAt(i) - 48;
+  const at = (x, y) => (x < 0 || x >= LEN || y < 0 || y >= H ? 0 : grid[y * LEN + x]);
+  const group = new THREE.Group();
+  // bloques del suelo y plataformas (instanciados: miles de cubos sin despeinarse)
+  const solid = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < LEN; x++) { const t = at(x, y); if (t === 1 || t === 2 || t === 5 || t === 8) solid.push([x, y, t]); }
+  const inst = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 3), std(0xffffff), solid.length);
+  const m4 = new THREE.Matrix4(), col = new THREE.Color();
+  solid.forEach(([x, y, t], i) => {
+    m4.makeTranslation(x + 0.5, y + 0.5, 0); inst.setMatrixAt(i, m4);
+    const surface = ![1, 2, 4, 5, 6, 7, 8].includes(at(x, y + 1));
+    let c = t === 2 ? pv.plat : surface ? pv.top : pv.dirt;
+    if (t === 5) c = 0xffd400; if (t === 8) c = 0x7a1f9a;
+    if (!surface && t === 1 && (x + y) % 3 === 0) col.setHex(c).multiplyScalar(0.88); else col.setHex(c);
+    inst.setColorAt(i, col);
+  });
+  inst.receiveShadow = true; inst.castShadow = true; group.add(inst);
+  const springs = new Map(), boxes = new Map();
+  for (let y = 0; y < H; y++) for (let x = 0; x < LEN; x++) {
+    const t = at(x, y);
+    if (t === 3) { // chumbera
+      const c = new THREE.Group();
+      const p1 = box(0.55, 0.75, 0.4, std(0x2f8a3a)); p1.position.set(0, 0.38, 0); c.add(p1);
+      const p2 = box(0.4, 0.5, 0.3, std(0x3aa04a)); p2.position.set(0.25, 0.85, 0); p2.rotation.z = -0.4; c.add(p2);
+      const p3 = box(0.35, 0.45, 0.3, std(0x3aa04a)); p3.position.set(-0.22, 0.8, 0); p3.rotation.z = 0.4; c.add(p3);
+      for (let k = 0; k < 6; k++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.22, 4), std(0xffffff)); sp.position.set(((k * 37) % 9) / 10 - 0.4, 0.2 + (k % 3) * 0.3, 0.22); sp.rotation.x = Math.PI / 2; c.add(sp); }
+      const fruit = sph(0.1, std(0xe6392f)); fruit.position.set(0.3, 1.1, 0); c.add(fruit);
+      c.position.set(x + 0.5, y, 0); group.add(c);
+    } else if (t === 4) { // muelle (cacharrito)
+      const s = new THREE.Group();
+      const base = box(0.9, 0.35, 0.9, std(0xe6392f)); base.position.y = 0.18; s.add(base);
+      const coil = cyl(0.25, 0.25, 0.4, std(0xcccccc, { metalness: 0.6 })); coil.position.y = 0.55; s.add(coil);
+      const top = box(0.95, 0.15, 0.95, std(0xffd400)); top.position.y = 0.8; s.add(top);
+      s.position.set(x + 0.5, y, 0); group.add(s); springs.set(x, s);
+    } else if (t === 6 || t === 7) { // caja sorpresa
+      const mat = new THREE.MeshStandardMaterial({ map: t === 6 ? TEX_BOXP : TEX_BOXD, emissive: t === 6 ? 0x442200 : 0x220044, roughness: 0.6 });
+      const b = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1.2), mat); b.castShadow = true;
+      b.position.set(x + 0.5, y + 0.5, 0); group.add(b);
+      boxes.set(y * LEN + x, { mesh: b, mat, tex: mat.map, used: false, bump: 0 });
+    }
+  }
+  // chiquis del nivel
+  const chiquis = ph.chiquis.map(([cx, cy], i) => { const c = makeChiqui(i); c.position.set(cx, cy - 0.4, 0.2); group.add(c); return c; });
+  for (const i of ph.taken || []) if (chiquis[i]) chiquis[i].visible = false;
+  for (const k of ph.boxes || []) setBox(boxes.get(k), false);
+  // banderines y meta
+  const groundY = (x) => { let y = H - 1; while (y > 0 && ![1, 2, 4, 5, 8].includes(at(Math.floor(x), y - 1))) y--; return y; };
+  for (const cx of ph.ck) {
+    const f = new THREE.Group(); const pole = cyl(0.06, 0.06, 3, std(0xdddddd)); pole.position.y = 1.5; f.add(pole);
+    const flag = box(1, 0.6, 0.05, std(0x2f6fe4)); flag.position.set(0.5, 2.6, 0); f.add(flag);
+    const flag2 = box(1, 0.3, 0.06, std(0x1fa45a)); flag2.position.set(0.5, 2.45, 0); f.add(flag2);
+    f.position.set(cx, groundY(cx), -0.6); group.add(f);
+  }
+  {
+    const fx = ph.finishX, gy = groundY(fx), arch = new THREE.Group();
+    for (const s of [-1, 1]) { const p = box(0.4, 6, 0.4, std(0xffffff)); p.position.set(0, 3, s * 1.6); arch.add(p); }
+    const bannerTex = canvasTex(512, 128, (g) => { for (let i = 0; i < 16; i++) for (let j = 0; j < 4; j++) { g.fillStyle = (i + j) % 2 ? '#000' : '#fff'; g.fillRect(i * 32, j * 32, 32, 32); } g.fillStyle = 'rgba(242,183,5,.92)'; g.fillRect(96, 22, 320, 84); g.fillStyle = '#2a1700'; g.font = '900 70px Nunito, sans-serif'; g.textAlign = 'center'; g.fillText('META', 256, 90); });
+    const banner = new THREE.Mesh(new THREE.PlaneGeometry(4, 1.2), new THREE.MeshBasicMaterial({ map: bannerTex, side: THREE.DoubleSide }));
+    banner.position.set(0, 5.6, 1.7); arch.add(banner);
+    arch.position.set(fx, gy, 0); group.add(arch);
+  }
+  // el fondo: siluetas y adornos según el mundo
+  for (let x = -20; x < LEN + 30; x += 7 + ((x * 13) % 5)) {
+    const h = 4 + ((x * 7) % 9);
+    const b = new THREE.Mesh(new THREE.BoxGeometry(6, h, 2), new THREE.MeshBasicMaterial({ color: pv.sil, fog: true }));
+    b.position.set(x, h / 2 - 1, -16 - ((x * 3) % 6)); group.add(b);
+  }
+  for (let x = 4; x < LEN; x += 9 + ((x * 11) % 7)) {
+    const y = groundY(x); const d = new THREE.Group();
+    if (ph.id === 'halloween') { const p = sph(0.5, std(0xff7a00, { emissive: 0xff5a00, emissiveIntensity: 0.9 })); p.scale.y = 0.8; p.position.y = 0.4; d.add(p); }
+    else if (ph.id === 'navidad') { for (let k = 0; k < 3; k++) { const c = new THREE.Mesh(new THREE.ConeGeometry(1.1 - k * 0.3, 1.2, 8), std(0x1b6b3a)); c.position.y = 0.9 + k * 0.75; d.add(c); } }
+    else if (ph.id === 'verano' || ph.id === 'levante') { const t = cyl(0.15, 0.2, 4, std(0x8a5a2b)); t.position.y = 2; d.add(t); for (let k = 0; k < 5; k++) { const l = box(2, 0.06, 0.5, std(0x2f9a3a)); l.position.set(Math.cos(k * 1.25) * 0.8, 4, Math.sin(k * 1.25) * 0.8); l.rotation.y = -k * 1.25; l.rotation.z = -0.3; d.add(l); } }
+    else if (ph.id === 'feria') { for (let k = 0; k < 4; k++) { const f = sph(0.25, new THREE.MeshBasicMaterial({ color: CHIQUI_COLS[k] })); f.position.set(k * 0.8 - 1.2, 4 + Math.sin(k) * 0.2, 0); d.add(f); } const p = cyl(0.05, 0.05, 4, std(0x666666)); p.position.y = 2; d.add(p); }
+    else if (ph.id === 'circuito') { for (let k = 0; k < 4; k++) { const c = box(0.8, 0.12, 0.5, std(k % 2 ? 0xe6392f : 0xffffff)); c.position.set(k * 0.8, 0.06, 0); d.add(c); } }
+    else if (ph.id === 'vendimia') { const b = cyl(0.7, 0.7, 1.3, std(0x7a4a22), 12); b.rotation.z = Math.PI / 2; b.position.y = 0.7; d.add(b); }
+    else if (ph.id === 'apagon') { const p = cyl(0.08, 0.1, 4, std(0x222222)); p.position.y = 2; d.add(p); const l = sph(0.3, new THREE.MeshBasicMaterial({ color: 0xffe9a0 })); l.position.y = 4.1; d.add(l); }
+    d.position.set(x, y, -3.5); group.add(d);
+  }
+  platRoot.add(group);
+  plat = { group, LEN, H, grid, at, springs, boxes, chiquis, ents: new Map(), loose: new Map(), ph, cam: new THREE.Vector3(3, 6, 0) };
+}
+function setBox(b, on) {
+  if (!b) return;
+  b.used = !on;
+  b.mat.map = on ? b.tex : null; b.mat.color.setHex(on ? 0xffffff : 0x8a5a2b); b.mat.emissive.setHex(on ? (b.tex === TEX_BOXP ? 0x442200 : 0x220044) : 0x000000); b.mat.needsUpdate = true;
+  if (!on) b.bump = performance.now();
+}
+function makeEnt(type) {
+  const g = new THREE.Group();
+  if (type === 1) { // caracol
+    const body = box(0.9, 0.3, 0.5, std(0xc9a05a)); body.position.y = 0.15; g.add(body);
+    const shell = sph(0.38, std(0x8a4a1a), 12); shell.position.set(-0.1, 0.55, 0); g.add(shell);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.05, 6, 14), std(0xf2d48a)); ring.position.set(-0.1, 0.55, 0.32); g.add(ring);
+    for (const z of [-0.1, 0.1]) { const a = cyl(0.03, 0.03, 0.35, std(0xc9a05a)); a.position.set(0.4, 0.45, z); g.add(a); const e = sph(0.06, std(0x111111)); e.position.set(0.4, 0.63, z); g.add(e); }
+  } else if (type === 2) { // barril
+    const r = new THREE.Group(); const b = cyl(0.45, 0.45, 1.0, std(0x7a4a22), 12); b.rotation.x = Math.PI / 2; r.add(b);
+    for (const z of [-0.3, 0.3]) { const h = cyl(0.47, 0.47, 0.06, std(0x222222), 12); h.rotation.x = Math.PI / 2; h.position.z = z; r.add(h); }
+    r.position.y = 0.45; g.add(r); g.userData.roll = r;
+  } else if (type === 3) { // er Tío del Saco
+    const s = saco.clone(); s.visible = true; s.scale.setScalar(0.65); s.rotation.y = Math.PI / 2; s.position.y = -1; g.add(s);
+  } else if (type === 4) { // petardo
+    const p = cyl(0.12, 0.12, 0.6, std(0xe6392f, { emissive: 0x661100 })); p.rotation.z = Math.PI / 2; g.add(p);
+    const spark = sph(0.14, new THREE.MeshBasicMaterial({ color: 0xffee55 })); spark.position.x = -0.35; g.add(spark);
+  }
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  platRoot.add(g);
+  return { g, type };
+}
+
+/* Los muñecos robables: cada uno con su pinta */
+function setCostume(av, idx) {
+  if (av.costume === idx) return;
+  av.costume = idx;
+  if (av.acc) { av.g.remove(av.acc); disposeGroup(av.acc); av.acc = null; }
+  const name = COSTUMES[idx] || 'normal';
+  const team = TEAM_COL[av.meta.team] ?? 0xffffff;
+  const bodyCol = { normal: team, rayo: 0xffd400, saltaora: 0xd8202f, fantasma: 0xeeeeee, torero: 0xd4a017 }[name];
+  av.bodyMat.color.setHex(bodyCol);
+  const acc = new THREE.Group();
+  if (name === 'rayo') {
+    const bolt = new THREE.MeshStandardMaterial({ color: 0xffee00, emissive: 0xffaa00, emissiveIntensity: 0.8 });
+    [[0, 3.0, 0.2, 0.4], [0.15, 2.75, 0.2, -0.4], [0, 3.25, 0.2, -0.4]].forEach(([x, y, w, r]) => { const b = box(w, 0.55, 0.15, bolt); b.position.set(x, y, 0); b.rotation.z = r; acc.add(b); });
+  } else if (name === 'saltaora') {
+    const flower = sph(0.22, std(0xff2a4a)); flower.position.set(0.45, 2.7, 0.2); acc.add(flower);
+    const peineta = box(0.9, 0.5, 0.08, std(0x111111)); peineta.position.set(0, 2.85, -0.45); acc.add(peineta);
+    for (let k = 0; k < 4; k++) { const dot = sph(0.07, std(0xffffff)); dot.position.set(-0.3 + k * 0.2, 1.0 + (k % 2) * 0.25, 0.31); acc.add(dot); }
+  } else if (name === 'fantasma') {
+    const sheet = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.9, 1.3), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false }));
+    sheet.position.y = 1.4; acc.add(sheet);
+    for (const x of [-0.25, 0.25]) { const e = box(0.18, 0.28, 0.02, new THREE.MeshBasicMaterial({ color: 0x111111 })); e.position.set(x, 2.3, 0.66); acc.add(e); }
+  } else if (name === 'torero') {
+    const m = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    for (const x of [-0.32, 0.32]) { const s = sph(0.32, m); s.scale.set(1, 0.6, 1); s.position.set(x, 2.72, 0); acc.add(s); }
+    const band = box(1.1, 0.12, 1.1, m); band.position.y = 2.66; acc.add(band);
+  }
+  av.g.add(acc); av.acc = acc;
+}
+
+function applyPlat(ph, announce = true) {
+  S.phase = ph; S.race = ph.race;
+  arena && (arena.visible = false); outer.visible = false;
+  decorCache.forEach((d) => (d.visible = false));
+  if (staticsGroup) staticsGroup.visible = false;
+  balls.forEach((b) => { b.mesh.visible = false; b.blob.visible = false; });
+  hazards.forEach((h) => scene.remove(h.g)); hazards.clear();
+  saco.visible = false;
+  buildPlat(ph);
+  platRoot.visible = true;
+  const v = VIS[ph.id];
+  scene.background.setHex(v.bg);
+  scene.fog = v.dark ? new THREE.Fog(v.bg, 15, 38) : new THREE.Fog(v.fog ? v.fog[0] : v.bg, 35, 100);
+  hemi.color.setHex(v.hemi[0]); hemi.groundColor.setHex(v.hemi[1]); hemi.intensity = v.hemi[2] + (v.dark ? 0 : ph.id === 'halloween' ? 0.45 : 0.15);
+  amb.intensity = v.amb + (v.dark ? 0 : 0.1);
+  sun.color.setHex(v.sun[0]); sun.intensity = v.sun[1];
+  accentLight.intensity = 0; myLight.intensity = v.dark ? 70 : 0; ballLight.intensity = 0;
+  snow.visible = ph.id === 'navidad';
+  $('#glare').style.opacity = v.glare ? 0.45 : 0;
+  $('#wind').classList.toggle('hidden', ph.id !== 'levante');
+  for (const av of S.avatars.values()) { av.costume = -1; setCostume(av, 0); }
+  $('#phName').textContent = `${ph.emoji} ${ph.name}`;
+  $('#phHint').textContent = ph.hint;
+  $('#phLevel').textContent = `CARRERA ${ph.level + 1}`;
+  setModeUI();
+  if (announce) { bigText(`${ph.emoji} ¡A CORRER!`, ph.hint); SFX.whistle(); }
+}
+function setModeUI() {
+  const isPlat = S.phase?.type === 'plat';
+  document.body.classList.toggle('platmode', isPlat);
+  $('#platHud').classList.toggle('hidden', !isPlat);
+  $('#btnMode').textContent = isPlat ? '⚽ Al campo' : '🏃 Plataformas';
+  $('#btnMode').classList.toggle('hidden', !!S.duel);
+  $('#tKick').textContent = isPlat ? 'SALTA' : 'CHUTA';
+  $('#tSprint').textContent = isPlat ? 'DASH' : 'ESPRÍN';
+  $('#tPower').classList.toggle('hidden', !isPlat);
+  $('#helpKeys').textContent = isPlat ? '←→ correr · ESPACIO saltar · SHIFT acelerón (roba muñecos) · E poder · pisa cabezas pa robar' : 'WASD mover · ESPACIO chutar · SHIFT esprín · 1‑8 frases';
+  if (!isPlat) { platRoot.visible = false; outer.visible = true; if (arena) arena.visible = true; if (staticsGroup) staticsGroup.visible = true; }
+}
+function onPlatPt(d) {
+  if (!plat) return;
+  if (d.k === 'c') { const c = plat.chiquis[d.i]; if (c) c.visible = !!d.on; if (!d.on) { const av = nearestAvatar(c.position.x, c.position.y); if (av && av.meta.nid === S.nid) beep(1320, 0.06, 'sine', 0.05); } }
+  if (d.k === 'b') setBox(plat.boxes.get(d.i), !!d.on);
+}
+function nearestAvatar(x, y) { let best = null, bd = 3; for (const av of S.avatars.values()) { const d = Math.hypot(av.g.position.x - x, av.g.position.y - y); if (d < bd) { bd = d; best = av; } } return best; }
+function onRace(r) {
+  S.race = r;
+  if (r.state === 'race') { $('#modal').classList.add('hidden'); }
+}
+function showRaceResults(f) {
+  const box = $('#modalBox'); box.innerHTML = '';
+  box.append(el('h2', { textContent: '🏁 ¡Carrera terminá!' }));
+  const tbl = el('table', { className: 'rank' });
+  tbl.append(el('tr', {}, ...['', 'Corredor', 'Chiquis', 'Muñeco', 'Puntos'].map((h) => el('th', { textContent: h }))));
+  for (const r of f.ranking) {
+    const medal = !r.finished ? '🐌' : ['🥇', '🥈', '🥉'][r.place - 1] || `${r.place}º`;
+    tbl.append(el('tr', { className: r.nid === S.nid ? 'me' : '' }, ...[medal, r.name, r.chiquis, r.costume, '+' + r.pts].map((v) => el('td', { textContent: v }))));
+  }
+  box.append(tbl, el('p', { className: 'small', style: 'margin-top:12px', textContent: `Siguiente carrera en unos segundos: ${f.next}` }));
+  box.append(el('div', { className: 'row', style: 'margin-top:10px' }, el('button', { className: 'btn', textContent: 'Vale', onclick: () => $('#modal').classList.add('hidden') })));
+  $('#modal').classList.remove('hidden');
+}
+function onPlatFx(f) {
+  const mine = f.nid === S.nid;
+  switch (f.t) {
+    case 'pgo': bigText('¡YAAA!', '¡Corre, quillo, corre!'); SFX.whistle(); return true;
+    case 'pdash': if (mine) beep(260, 0.12, 'sawtooth', 0.06, 500); return true;
+    case 'pdouble': if (mine) beep(700, 0.08, 'square', 0.05, 300); return true;
+    case 'pspring': if (mine) beep(220, 0.25, 'square', 0.07, 900); return true;
+    case 'pstomp': SFX.kick(); return true;
+    case 'pcheck': toast('🚩 ¡Banderín! Si te caes, vuelves aquí'); SFX.point(); return true;
+    case 'pitem': if (mine) { bigText(f.kind === 'poder' ? f.what : `¡Ahora eres ${f.what}!`, f.kind === 'poder' ? 'Úsalo con la E (o el botón PODER)' : f.hint); SFX.point(); } return true;
+    case 'ppower': if (mine) SFX.turbo(); else toast(`${f.name} ha usao ${f.what}`); return true;
+    case 'pshield': beep(1000, 0.15, 'sine', 0.07); if (mine) toast('🛡️ ¡Tu escudo te ha salvao!'); return true;
+    case 'pboom': SFX.knock(); shake(0.3); return true;
+    case 'phurt':
+      if (mine) { SFX.knock(); shake(0.5); if (f.why !== 'saco') bigText(f.respawn ? '¡Pa’trás!' : '¡AY!', f.msg + (f.lost ? ` (se te han caío ${f.lost} chiquis)` : '')); }
+      return true;
+    case 'steal': {
+      SFX.saco();
+      const what = f.kind === 'pisoton' ? `${f.n ? f.n + ' chiquis' : ''}${f.n && f.what ? ' y ' : ''}${f.what || ''}` : f.what;
+      if (f.toNid === S.nid) bigText(f.kind === 'pisoton' ? '¡PISOTÓN!' : '¡TE HAS QUEDAO SU MUÑECO!', what ? `Le has robao a ${f.from}: ${what}` : `A ${f.from} no le quedaba ná que robar`);
+      else if (f.fromNid === S.nid) bigText('¡TE HAN ROBAO!', `${f.to} te ha quitao ${what || 'el sitio'}`);
+      else toast(`🦹 ${f.to} le ha robao a ${f.from}${what ? ': ' + what : ''}`);
+      return true;
+    }
+    case 'pfinish':
+      if (mine) bigText(f.place === 1 ? '🏆 ¡HAS LLEGADO EL PRIMERO!' : `🏁 ¡Llegas el ${f.place}º!`, f.place === 1 ? '¡Ole tu arte! Los demás tienen 20 segundos' : '¡Bien corrío!');
+      else toast(`🏁 ${f.name} llega a la meta el ${f.place}º`);
+      SFX.goal(); return true;
+    case 'praceEnd': showRaceResults(f); return true;
+  }
+  return false;
+}
+
+function onPlatSnapshot(pkt) {
+  const players = new Map();
+  for (let i = 0; i < pkt.p.length; i += 8) players.set(pkt.p[i], pkt.p.slice(i + 1, i + 8));
+  const e = new Map(); for (let i = 0; i < pkt.e.length; i += 5) e.set(pkt.e[i], pkt.e.slice(i + 1, i + 5));
+  const l = new Map(); for (let i = 0; i < pkt.l.length; i += 3) l.set(pkt.l[i], [pkt.l[i + 1], pkt.l[i + 2]]);
+  S.snaps.push({ t: pkt.t, plat: true, players, e, l });
+  if (S.snaps.length > 40) S.snaps.shift();
+}
+
+function renderPlat(dt, tNow) {
+  if (!plat) return;
+  const br = bracket(100), brMe = bracket(40);
+  if (!br || !br.a.plat || !br.b.plat) return;
+  const { a, b, k } = br;
+  let me = null;
+  const order = [];
+  for (const [nid, av] of S.avatars) {
+    const use = nid === S.nid ? brMe : br;
+    if (!use.a.plat || !use.b.plat) continue;
+    const pa = use.a.players.get(nid), pb = use.b.players.get(nid) || pa;
+    if (!pa) { av.g.visible = false; av.shadowBlob.visible = false; continue; }
+    const x = lerp(pa[0], pb[0], use.k), y = lerp(pa[1], pb[1], use.k), vx = pb[2], fl = pb[3];
+    av.g.visible = !(fl & 1) || Math.floor(tNow / 90) % 2 === 0; // parpadeo cuando te han dao
+    av.shadowBlob.visible = false;
+    av.g.position.set(x, y, nid === S.nid ? 0.4 : 0);
+    av.g.scale.setScalar(0.65);
+    const facing = fl & 32 ? -1 : 1;
+    av.rot = lerpAng(av.rot, facing * 0.95, Math.min(1, dt * 14)); // de lado pero enseñando la cara
+    av.g.rotation.y = av.rot;
+    const ground = fl & 16, speed = Math.abs(vx);
+    av.walk += (ground ? Math.min(speed, 16) : 0) * dt * 1.6;
+    const sw = Math.sin(av.walk) * Math.min(1, speed / 5) * 0.9;
+    av.legs[0].rotation.x = ground ? sw : 0.6; av.legs[1].rotation.x = ground ? -sw : -0.4;
+    av.arms[0].rotation.x = -sw; av.arms[1].rotation.x = sw;
+    const up = !ground || fl & 256; av.arms[0].rotation.z = up ? -2.4 : 0; av.arms[1].rotation.z = up ? 2.4 : 0;
+    setCostume(av, pb[4]);
+    av.bodyMat.emissive.setHex(fl & 4 ? 0xff5500 : fl & 2 ? 0x3366ff : fl & 64 ? 0x1188ff : fl & 512 ? 0x7722aa : 0);
+    // el cartel: nombre + chiquis + poder
+    const label = `${av.meta.name} · ${pb[6]}🧒${pb[5] ? ' ' + POWER_ICON[pb[5]] : ''}`;
+    if (av.labelTxt !== label && av.img) { av.labelTxt = label; av.label.userData.redraw(label, '#' + (TEAM_COL[av.meta.team] ?? 0xffffff).toString(16).padStart(6, '0'), av.img, nid === S.nid); }
+    const meta = S.roster.get(nid), away = meta && meta.status !== 'jugando';
+    if (away !== av.statusShown) { av.statusShown = away; av.status.visible = !!away; if (away) av.status.userData.redraw(STATUS_TXT[meta.status]?.join(' ') || 'Ausente'); }
+    if (av.bubble.visible && tNow > av.bubbleUntil) av.bubble.visible = false;
+    order.push({ nid, x, fin: fl & 128, name: av.meta.name });
+    if (nid === S.nid) me = { x, y, vx, fl, ch: pb[6], pw: pb[5], cos: pb[4] };
+  }
+  // bichos y cosas
+  const seen = new Set();
+  for (const [id, eb] of b.e) {
+    seen.add(id);
+    let ent = plat.ents.get(id);
+    if (!ent) { ent = makeEnt(eb[0]); plat.ents.set(id, ent); }
+    const ea = a.e.get(id) || eb;
+    ent.g.position.set(lerp(ea[1], eb[1], k), lerp(ea[2], eb[2], k), 0);
+    if (ent.type === 1) ent.g.rotation.y = eb[3] > 0 ? 0 : Math.PI;
+    if (ent.type === 2) ent.g.userData.roll.rotation.z += dt * 12;
+    if (ent.type === 3) ent.g.position.y += Math.sin(tNow / 150) * 0.2;
+  }
+  for (const [id, ent] of plat.ents) if (!seen.has(id)) { platRoot.remove(ent.g); plat.ents.delete(id); }
+  // chiquis sueltos (¡a por ellos!)
+  const seenL = new Set();
+  for (const [id, lb] of b.l) {
+    seenL.add(id);
+    let c = plat.loose.get(id);
+    if (!c) { c = { g: makeChiqui(id) }; platRoot.add(c.g); plat.loose.set(id, c); }
+    const la = a.l.get(id) || lb;
+    c.g.position.set(lerp(la[0], lb[0], k), lerp(la[1], lb[1], k) - 0.4, 0.3);
+    c.g.rotation.y += dt * 8;
+  }
+  for (const [id, c] of plat.loose) if (!seenL.has(id)) { platRoot.remove(c.g); plat.loose.delete(id); }
+  // chiquis del nivel bailando
+  plat.chiquis.forEach((c, i) => { if (c.visible) { c.rotation.y = Math.sin(tNow / 400 + i) * 0.8; c.children[1].position.y = 0.62 + Math.abs(Math.sin(tNow / 250 + i)) * 0.08; } });
+  // cajas que dan un botecito al golpearlas
+  plat.boxes.forEach((bx) => { const t = (tNow - bx.bump) / 200; bx.mesh.position.y = Math.floor(bx.mesh.position.y) + 0.5 + (t < 1 && t > 0 ? Math.sin(t * Math.PI) * 0.3 : 0); });
+  // HUD de carrera
+  if (me) {
+    $('#pChiquis').textContent = me.ch;
+    $('#pPower').textContent = me.pw ? `${POWER_ICON[me.pw]} ${POWER_LABEL[me.pw]}` : '— sin poder —';
+    $('#pCostume').textContent = COSTUME_LABEL[COSTUMES[me.cos]] || '';
+    const pos = order.filter((o) => o.x > me.x && !(me.fl & 128)).length + 1;
+    $('#sNum').textContent = me.fl & 128 ? '🏁' : `${pos}º`;
+    // la cámara de lado, que se adelanta pa’ donde corres
+    const look = me.vx > 1 ? 3.5 : me.vx < -1 ? -3.5 : 1.5;
+    plat.cam.x = lerp(plat.cam.x, me.x + look, Math.min(1, dt * 3));
+    plat.cam.y = lerp(plat.cam.y, Math.max(5, me.y + 1.5), Math.min(1, dt * 3));
+    myLight.position.set(me.x, me.y + 2, 3);
+  }
+  $('#sName0').textContent = '🏃 PUESTO'; $('#sName1').textContent = raceClock();
+  // la barrita de progreso con todos los corredores
+  const prog = $('#pProg');
+  if (prog.children.length !== order.length) { prog.innerHTML = ''; for (let i = 0; i < order.length; i++) prog.append(el('i')); }
+  order.forEach((o, i) => { const d = prog.children[i]; d.style.left = `${Math.min(100, (o.x / plat.ph.finishX) * 100)}%`; d.className = o.nid === S.nid ? 'me' : ''; d.title = o.name; });
+  const portrait = innerHeight > innerWidth;
+  camTarget.set(plat.cam.x, plat.cam.y, 0);
+  camera.position.set(plat.cam.x, plat.cam.y + 2, portrait ? 24 : 16);
+  if (shakeAmt > 0) { camera.position.x += (Math.random() - 0.5) * shakeAmt; camera.position.y += (Math.random() - 0.5) * shakeAmt; shakeAmt = Math.max(0, shakeAmt - dt * 1.5); }
+  camera.lookAt(plat.cam.x, plat.cam.y + 0.5, 0);
+  sun.position.set(plat.cam.x - 12, plat.cam.y + 30, 18); sun.target.position.set(plat.cam.x, plat.cam.y, 0);
+}
+function raceClock() {
+  const r = S.race; if (!r) return '';
+  const now = serverNow();
+  if (r.state === 'ready') { const s = Math.ceil((r.until - now) / 1000); if (s !== S.lastCount && s > 0 && s <= 3) { S.lastCount = s; bigText(String(s), ''); beep(600, 0.1, 'sine'); } return `SALIDA EN ${Math.max(0, s)}`; }
+  if (r.state === 'results') return 'RESULTADOS';
+  const end = r.close || r.startAt + 150000;
+  const s = Math.max(0, Math.ceil((end - now) / 1000));
+  return `${r.close ? '⚠️ ' : '⏱ '}${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
 
 /* ===========================================================================
  *  EL BUCLE DE PINTAR (60 fps si el móvil aguanta)
@@ -1141,7 +1567,7 @@ function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, clock.getDelta());
   const tNow = performance.now();
-  if (S.inGame && S.phase && S.snaps.length) renderWorld(dt, tNow);
+  if (S.inGame && S.phase && S.snaps.length) (S.phase.type === 'plat' ? renderPlat : renderWorld)(dt, tNow);
   // la nieve cae, como en el Mamelón en 1954
   if (snow.visible) {
     const p = snowGeo.attributes.position.array;
@@ -1159,7 +1585,7 @@ function frame() {
 function renderWorld(dt, tNow) {
   const ph = S.phase, v = VIS[ph.id];
   const br = bracket(110), brMe = bracket(45);
-  if (!br) return;
+  if (!br || br.a.plat || br.b.plat || brMe.a.plat || brMe.b.plat) return;
   const { a, b, k } = br;
   // jugadores
   for (const [nid, av] of S.avatars) {
@@ -1349,6 +1775,7 @@ $('#btnOnline').onclick = () => $('#onlinePanel').classList.toggle('hidden');
 $('#botPadel').onclick = () => { S.socket.emit('challengeBot', { type: 'padel' }); $('#onlinePanel').classList.add('hidden'); };
 $('#botFutbol').onclick = () => { S.socket.emit('challengeBot', { type: 'futbol' }); $('#onlinePanel').classList.add('hidden'); };
 $('#btnRank').onclick = showRanking;
+$('#btnMode').onclick = () => { S.socket.emit(isPlatMode() ? 'goField' : 'goPlat'); $('#modal').classList.add('hidden'); };
 $('#btnEmo').onclick = () => $('#emotes').classList.toggle('open');
 $('#btnSound').onclick = () => { S.sound = !S.sound; store.set('lalia_sonido', S.sound ? '1' : '0'); $('#btnSound').textContent = S.sound ? '🔊' : '🔇'; };
 $('#btnSound').textContent = S.sound ? '🔊' : '🔇';
