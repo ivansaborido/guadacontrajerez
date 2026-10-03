@@ -1,0 +1,23 @@
+{
+  "name": "la-lia-jerez-guadalcacin",
+  "version": "1.0.0",
+  "description": "¡La Liá! Juego multijugador 3D: Jerez vs Guadalcacín",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "prueba": "PHASE_SECONDS=4 node index.js",
+    "test": "node test/simulacion.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^4.22.3",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.4"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "private": true
+}
